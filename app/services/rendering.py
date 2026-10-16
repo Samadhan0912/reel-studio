@@ -155,7 +155,7 @@ def render_recording_clip(source: str, output: Path, start: float, end: float, t
     main_output = output.with_name(f"{output.stem}.main.mp4") if intro_outro else output
     duration = max(1, end - start)
     focus_x = min(1.0, max(0.0, float(focus_x)))
-    accent = (brand or {}).get("colors", {}).get("primary", "#B9F66A").lstrip("#")
+    accent = ((brand or {}).get("caption_style", {}).get("accent") or (brand or {}).get("colors", {}).get("primary", "#B9F66A")).lstrip("#")
     if len(accent) != 6:
         accent = "B9F66A"
     x_expr = f"{focus_x:.4f}*iw-ih*9/32"
@@ -196,7 +196,8 @@ def _write_ass(captions: list[dict[str, Any]], destination: Path, duration: floa
         seconds = max(0, min(duration, seconds))
         whole = int(seconds)
         return f"{whole // 3600}:{(whole % 3600) // 60:02}:{whole % 60:02}.{int((seconds % 1) * 100):02}"
-    lines = ["[Script Info]", "ScriptType: v4.00+", "PlayResX: 720", "PlayResY: 1280", "", "[V4+ Styles]", "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding", f"Style: Default,Arial,42,&H00FFFFFF,&H00FFFFFF,&H80000000,&H90000000,1,0,1,2,0,2,35,35,125,1", "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
+    caption_color = _ass_color(accent)
+    lines = ["[Script Info]", "ScriptType: v4.00+", "PlayResX: 720", "PlayResY: 1280", "", "[V4+ Styles]", "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding", f"Style: Default,Arial,42,{caption_color},&H00FFFFFF,&H80000000,&H90000000,1,0,1,2,0,2,35,35,125,1", "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
     for item in captions:
         start, end = float(item.get("start_seconds", item.get("start", 0))), float(item.get("end_seconds", item.get("end", 0)))
         caption = str(item.get("text", "")).replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}").replace("\n", " ")
@@ -217,16 +218,18 @@ def _ass_color(value: str) -> str:
 
 
 def _ass_header(accent: str) -> list[str]:
-    color = _ass_color(accent)
+    theme_color = _ass_color("#B9F66A")
+    caption_color = _ass_color(accent)
     return [
         "[Script Info]", "ScriptType: v4.00+", "PlayResX: 720", "PlayResY: 1280", "WrapStyle: 2", "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
         f"Style: Default,Arial,40,&H00FFFFFF,&H00FFFFFF,&H80000000,&H90000000,1,0,1,2,0,2,36,36,120,1",
-        f"Style: Title,Arial,32,{color},&H00FFFFFF,&H80000000,&H90000000,1,0,1,2,0,8,40,40,70,1",
-        f"Style: Brand,Arial,23,{color},&H00FFFFFF,&H80000000,&H90000000,1,0,1,2,0,3,30,30,48,1",
+        f"Style: Caption,Arial,40,{caption_color},&H00FFFFFF,&H80000000,&H90000000,1,0,1,2,0,2,36,36,120,1",
+        f"Style: Title,Arial,32,{theme_color},&H00FFFFFF,&H80000000,&H90000000,1,0,1,2,0,8,40,40,70,1",
+        f"Style: Brand,Arial,23,{theme_color},&H00FFFFFF,&H80000000,&H90000000,1,0,1,2,0,3,30,30,48,1",
         f"Style: Scene,Arial,38,&H00FFFFFF,&H00FFFFFF,&H80000000,&H90000000,1,0,1,2,0,7,54,54,310,1",
-        f"Style: Code,Courier New,25,{color},&H00FFFFFF,&H80000000,&H90000000,0,0,1,2,0,7,50,50,650,1",
+        f"Style: Code,Courier New,25,{theme_color},&H00FFFFFF,&H80000000,&H90000000,0,0,1,2,0,7,50,50,650,1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
 
@@ -252,7 +255,7 @@ def _write_clip_ass(words: list[dict[str, Any]], destination: Path, start: float
                 continue
             finish = min(duration, max(begin + 0.12, next_start - start))
             if finish > begin:
-                lines.append(f"Dialogue: 1,{_ass_stamp(begin)},{_ass_stamp(finish)},Default,,0,0,0,,{_ass_escape(text)}")
+                lines.append(f"Dialogue: 1,{_ass_stamp(begin)},{_ass_stamp(finish)},Caption,,0,0,0,,{_ass_escape(text)}")
     destination.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -294,7 +297,7 @@ def _write_explainer_ass(captions: list[dict[str, Any]], scenes: list[dict[str, 
         finish = float(caption.get("end_seconds", caption.get("end", 0)))
         text = str(caption.get("text", "")).strip()
         if text and finish > begin:
-            lines.append(f"Dialogue: 2,{_ass_stamp(begin)},{_ass_stamp(min(duration, finish))},Default,,0,0,0,,{_ass_escape(text)}")
+            lines.append(f"Dialogue: 2,{_ass_stamp(begin)},{_ass_stamp(min(duration, finish))},Caption,,0,0,0,,{_ass_escape(text)}")
     destination.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -302,7 +305,7 @@ def render_explainer(scenes: list[dict[str, Any]], captions: list[dict[str, Any]
     output.parent.mkdir(parents=True, exist_ok=True)
     intro_outro = bool((brand or {}).get("intro_path") or (brand or {}).get("outro_path"))
     main_output = output.with_name(f"{output.stem}.main.mp4") if intro_outro else output
-    accent = (brand or {}).get("colors", {}).get("primary", "#B9F66A").lstrip("#")
+    accent = ((brand or {}).get("caption_style", {}).get("accent") or (brand or {}).get("colors", {}).get("primary", "#B9F66A")).lstrip("#")
     if len(accent) != 6:
         accent = "B9F66A"
     subtitle_file = output.with_suffix(".ass")

@@ -20,11 +20,31 @@ function esc(value = '') {
   return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 function setMode(mode) {
-  document.querySelectorAll('.mode').forEach(button => button.classList.toggle('active', button.dataset.mode === mode));
+  document.querySelectorAll('.start-choice').forEach(button => button.classList.toggle('active', button.dataset.startMode === mode));
   $('#recording-pane').classList.toggle('hidden', mode !== 'recording');
   $('#topic-pane').classList.toggle('hidden', mode !== 'topic');
 }
-document.querySelectorAll('.mode').forEach(button => button.addEventListener('click', () => setMode(button.dataset.mode)));
+function showPage(page, updateHash = true) {
+  document.querySelectorAll('[data-page-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.pagePanel === page));
+  document.querySelectorAll('[data-page-nav]').forEach(link => link.classList.toggle('active', link.dataset.pageNav === page));
+  $('#current-page-title').textContent = ({studio:'Studio',library:'Library',brand:'Brand kit'})[page] || 'Studio';
+  if (updateHash) history.replaceState(null, '', `#${page}`);
+  if (page === 'library') loadJobs();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('[data-page-nav]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); showPage(link.dataset.pageNav); }));
+document.querySelectorAll('[data-go-page]').forEach(button => button.addEventListener('click', () => showPage(button.dataset.goPage)));
+document.querySelectorAll('.start-choice').forEach(button => button.addEventListener('click', () => {
+  const mode = button.dataset.startMode; setMode(mode); $('#new-project-dialog').close(); showPage('studio');
+  if (mode === 'topic') setTimeout(() => $('#topic-input').focus(), 280);
+  else setTimeout(() => $('#dropzone').scrollIntoView({behavior:'smooth',block:'center'}), 100);
+}));
+function openProjectChooser() { if (!$('#new-project-dialog').open) $('#new-project-dialog').showModal(); }
+$('#new-project').addEventListener('click', openProjectChooser);
+$('#library-new-project').addEventListener('click', openProjectChooser);
+$('#skip-project').addEventListener('click', () => $('#new-project-dialog').close());
+$('#later-project').addEventListener('click', () => $('#new-project-dialog').close());
+$('#new-project-dialog').addEventListener('close', () => { try { sessionStorage.setItem('reel-studio-start-seen','1'); } catch {} });
 document.querySelectorAll('.chip').forEach(button => button.addEventListener('click', () => { $('#topic-input').value = button.dataset.topic; $('#topic-input').focus(); }));
 $('#docs-link').addEventListener('click', () => window.open('/docs', '_blank'));
 
@@ -45,8 +65,7 @@ $('#make-recording').addEventListener('click', async event => {
   try {
     const form = new FormData(); form.append('file', selectedFile);
     const asset = await request('/assets', { method: 'POST', body: form });
-    const vocabulary = $('#vocabulary').value.split(',').map(word => word.trim()).filter(Boolean);
-    const job = await request('/jobs/recording', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({asset_id:asset.id,language:$('#language').value,target_clip_seconds:Number($('#clip-length').value),technical_vocabulary:vocabulary,brand_id:knownBrandId}) });
+    const job = await request('/jobs/recording', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({asset_id:asset.id,language:$('#language').value,target_clip_seconds:Number($('#clip-length').value),brand_id:knownBrandId}) });
     toast('Recording uploaded. Local transcription is starting.'); await loadJobs(); openJob(job.id);
   } catch (error) { toast(error.message); }
   finally { button.disabled = false; button.innerHTML = 'Find my best moments <span>→</span>'; }
@@ -63,18 +82,28 @@ $('#make-topic').addEventListener('click', async event => {
 });
 
 async function loadJobs() {
-  const host = $('#jobs-list');
+  const hosts = [$('#jobs-list'), $('#studio-recent-list')].filter(Boolean);
   try {
-    const jobs = await request('/jobs?limit=20'); $('#job-count').textContent = jobs.length;
-    if (!jobs.length) { host.innerHTML = '<div class="empty-state"><span>◷</span><b>Your next great reel starts here</b><p>Start with a recording or a topic above.</p></div>'; return; }
-    host.innerHTML = jobs.map(job => {
+    const jobs = await request('/jobs?limit=20');
+    $('#nav-job-count').textContent = jobs.length;
+    $('#library-summary').textContent = `${jobs.length} ${jobs.length === 1 ? 'project' : 'projects'} in your workspace`;
+    if (!jobs.length) {
+      $('#jobs-list').innerHTML = '<div class="empty-state glass-panel"><span>◷</span><b>No projects yet</b><p>Start with a class recording or a topic explainer.</p><button class="primary-button" data-go-page="studio">Create a project <span>→</span></button></div>';
+      $('#studio-recent-list').innerHTML = '<div class="empty-state"><b>Your projects will appear here</b><p>Create your first video to get started.</p></div>';
+      $('#jobs-list').querySelector('[data-go-page]')?.addEventListener('click', () => showPage('studio'));
+      return;
+    }
+    const cards = jobs.map(job => {
       const title = job.input_json?.topic || job.input_json?.source_filename || (job.kind === 'recording_highlights' ? 'Class recording highlights' : job.kind.replaceAll('_',' '));
       const icon = job.kind === 'topic_explainer' ? '✳' : job.kind === 'clip_render' ? '▶' : '◉';
       const date = new Date(job.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
       return `<article class="job-card" data-job="${esc(job.id)}"><div class="job-thumb">${icon}</div><div class="job-info"><b>${esc(title)}</b><small>${esc(job.kind.replaceAll('_',' '))} · ${date}${job.error ? ` · ${esc(job.error)}` : ''}</small></div><span class="status ${esc(job.status)}">${esc(job.status)}</span><span class="job-arrow">→</span></article>`;
-    }).join('');
-    host.querySelectorAll('.job-card').forEach(card => card.addEventListener('click', () => openJob(card.dataset.job)));
-  } catch (error) { host.innerHTML = `<div class="empty-state"><b>Couldn’t reach the API</b><p>${esc(error.message)} · Start the backend server and refresh.</p></div>`; }
+    });
+    hosts.forEach((host,index) => {
+      host.innerHTML = cards.slice(0,index === 0 ? 20 : 3).join('');
+      host.querySelectorAll('.job-card').forEach(card => card.addEventListener('click', () => openJob(card.dataset.job)));
+    });
+  } catch (error) { hosts.forEach(host => { host.innerHTML = `<div class="empty-state"><b>Couldn’t reach the API</b><p>${esc(error.message)} · Start the backend server and refresh.</p></div>`; }); }
 }
 $('#refresh-jobs').addEventListener('click', loadJobs);
 
@@ -134,7 +163,7 @@ async function openJob(id) {
 $('dialog form').addEventListener('submit', () => $('#job-dialog').close());
 
 $('#brand-name').addEventListener('input', () => { $('#brand-preview-name').textContent = $('#brand-name').value || 'Your brand'; $('#brand-preview-logo').textContent = ($('#brand-name').value.trim()[0] || 'R').toUpperCase(); });
-$('#brand-color').addEventListener('input', event => { document.documentElement.style.setProperty('--lime', event.target.value); $('#brand-colors').textContent = `${event.target.value.toUpperCase()}   #101512`; });
+$('#brand-color').addEventListener('input', event => { $('#brand-colors').textContent = `${event.target.value.toUpperCase()} · CAPTION COLOR`; document.documentElement.style.setProperty('--caption-color', event.target.value); });
 async function saveBrand(showToast = true) {
   const name = $('#brand-name').value.trim(); if (!name) return toast('Add a brand name.');
   const color = $('#brand-color').value;
@@ -157,9 +186,17 @@ $('#save-brand').addEventListener('click', () => saveBrand());
   });
 });
 
-loadJobs();
 const initialJob = new URLSearchParams(location.search).get('job');
+const initialPage = ['studio','library','brand'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'studio';
+showPage(initialPage, false);
+setMode('recording');
+loadJobs();
 if (initialJob) setTimeout(() => openJob(initialJob), 350);
+else {
+  let showWelcome = true;
+  try { showWelcome = !sessionStorage.getItem('reel-studio-start-seen'); } catch {}
+  if (showWelcome && initialPage === 'studio') setTimeout(openProjectChooser, 420);
+}
 request('/capabilities').then(capabilities => {
   const isDemo = capabilities.demo_mode;
   const features = capabilities.features || {};
@@ -181,6 +218,6 @@ request('/brands').then(brands => {
   const brand = brands[0]; knownBrandId = brand.id; $('#brand-name').value = brand.name; $('#brand-preview-name').textContent = brand.name;
   brandAssetIds = {logo_asset_id:brand.logo_asset_id || null,intro_asset_id:brand.intro_asset_id || null,outro_asset_id:brand.outro_asset_id || null};
   $('#brand-preview-logo').textContent = (brand.name[0] || 'R').toUpperCase();
-  const color = brand.colors?.primary || '#b9f66a'; $('#brand-color').value = color; $('#brand-colors').textContent = `${color.toUpperCase()}   #101512`; document.documentElement.style.setProperty('--lime', color);
+  const color = brand.caption_style?.accent || brand.colors?.primary || '#b9f66a'; $('#brand-color').value = color; $('#brand-colors').textContent = `${color.toUpperCase()} · CAPTION COLOR`; document.documentElement.style.setProperty('--caption-color', color);
 }).catch(() => {});
 setInterval(loadJobs, 12000);
