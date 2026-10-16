@@ -1,0 +1,46 @@
+# Environment & Secrets
+.env
+.env.local
+*.key
+*.pem
+
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+
+# Flutter & Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+frontend/flutter_app/build/
+frontend/flutter_app/.dart_tool/
+frontend/flutter_app/.packages
+
+# Media & Storage (Never commit generated video / heavy uploads)
+backend/storage/uploads/*
+backend/storage/exports/*
+backend/storage/temp/*
+!backend/storage/uploads/.gitkeep
+!backend/storage/exports/.gitkeep
+!backend/storage/temp/.gitkeep
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.sqlite
+*.db
+
+# Operating System & Editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
