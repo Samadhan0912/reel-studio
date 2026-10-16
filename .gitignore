@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.runenv/
+.venv/
+.tmp/
+__pycache__/
+*.py[cod]
+uploads/
+outputs/
+data/

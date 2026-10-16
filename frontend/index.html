@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111319">
+  <title>Reel Studio — Video workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <aside class="sidebar glass-panel">
+    <a class="brand" href="#studio" aria-label="Reel Studio home"><span class="brand-mark">r<span>·</span></span><span>reel<span class="brand-light">studio</span></span></a>
+    <div class="workspace"><span class="workspace-avatar">T</span><span><b>TechSummit</b><small>Creator workspace</small></span><span class="chevron">⌄</span></div>
+    <div class="side-label">WORKSPACE</div>
+    <nav class="main-nav">
+      <a class="nav-item active" href="#studio" data-page-nav="studio"><span class="nav-icon">◧</span><span>Studio</span><span class="nav-shortcut">⌘ 1</span></a>
+      <a class="nav-item" href="#library" data-page-nav="library"><span class="nav-icon">▤</span><span>Library</span><span class="nav-count" id="nav-job-count">0</span></a>
+      <a class="nav-item" href="#brand" data-page-nav="brand"><span class="nav-icon">✳</span><span>Brand kit</span></a>
+    </nav>
+    <div class="sidebar-bottom"><div class="service-card"><span class="service-dot"></span><div><b>Local workspace</b><small>Your media stays on this machine</small></div></div><button class="help-link" id="docs-link">↗ &nbsp; API documentation</button><div class="profile"><span class="profile-avatar">K</span><span><b>Creator account</b><small>Personal workspace</small></span><button class="more" aria-label="Account menu">···</button></div></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar glass-panel"><div class="breadcrumbs">Workspace <span>/</span> <b id="current-page-title">Studio</b></div><div class="top-actions"><span class="demo-pill"><i></i><span>CHECKING SERVICES</span></span><span class="top-avatar">K</span></div></header>
+    <div class="page-wrap">
+      <section class="page-panel active" data-page-panel="studio">
+        <div class="welcome"><div><div class="eyebrow"><span class="sparkle">✦</span> REEL STUDIO</div><h1>Make something<br><em>worth watching.</em></h1><p>Turn the best ideas from your classroom into short-form video.</p></div><button class="new-project-button" id="new-project"><span>＋</span> New project</button></div>
+        <div class="notice glass-panel"><span class="notice-mark">i</span><span><b>Checking local services…</b> Feature availability will appear here.</span><a href="/docs" target="_blank" rel="noreferrer">API docs ↗</a></div>
+        <div class="section-heading"><div><div class="eyebrow">CREATE</div><h2>Start with an idea</h2><p>Choose the source that works for you.</p></div></div>
+        <div class="create-card glass-panel" id="create-card">
+          <div class="recording-pane" id="recording-pane">
+            <div class="pane-heading"><div><span class="pane-icon recording-icon">◉</span><div><h3>Find the best moments in a class</h3><p>Turn a long recording into a set of ready-to-edit vertical clips.</p></div></div><span class="step-label">SOURCE <i>01</i></span></div>
+            <label class="dropzone" id="dropzone"><input id="video-file" type="file" accept="video/*"><span class="upload-icon">↑</span><b id="file-label">Drop a class recording here</b><small>or <u>browse files</u> · MP4, MOV, WEBM · up to 2 GB</small><span class="file-picked" id="file-picked"></span></label>
+            <div class="create-options"><label>Spoken language<select id="language"><option value="hi-en">Hinglish (Hindi + English)</option><option value="en">English</option><option value="hi">Hindi</option></select></label><label>Target clip length<select id="clip-length"><option value="45">About 45 seconds</option><option value="30">About 30 seconds</option><option value="60">About 60 seconds</option></select></label></div>
+            <div class="create-footer"><span class="secure-note">◈ &nbsp; Transcription runs locally on this machine.</span><button class="primary-button" id="make-recording">Find highlights <span>→</span></button></div>
+          </div>
+          <div class="topic-pane hidden" id="topic-pane">
+            <div class="pane-heading"><div><span class="pane-icon topic-icon">✳</span><div><h3>Build a topic explainer</h3><p>Start with a subject and get a script, storyboard, and captions.</p></div></div><span class="step-label">IDEA <i>01</i></span></div>
+            <label class="field-label" for="topic-input">WHAT SHOULD YOUR VIDEO EXPLAIN?</label><textarea id="topic-input" placeholder="e.g. JSON vs XML, explained for beginners" maxlength="300"></textarea><div class="topic-chips"><button class="chip" data-topic="JSON vs XML">JSON vs XML</button><button class="chip" data-topic="React useEffect">React useEffect</button><button class="chip" data-topic="What is Kubernetes?">What is Kubernetes?</button></div>
+            <div class="create-options"><label>Audience<select id="audience"><option>beginner</option><option>intermediate</option><option>advanced</option></select></label><label>Video length<select id="explainer-length"><option value="45">45 seconds</option><option value="30">30 seconds</option><option value="60">60 seconds</option></select></label><label>Language<select id="explainer-language"><option value="en">English</option><option value="hi-en">Hinglish</option><option value="hi">Hindi</option></select></label></div>
+            <div class="create-footer"><span class="secure-note">Script · visual storyboard · voiceover · captions</span><button class="primary-button" id="make-topic">Create explainer <span>→</span></button></div>
+          </div>
+        </div>
+        <section class="studio-recent"><div class="section-heading library-heading"><div><div class="eyebrow">RECENT</div><h2>Pick up where you left off</h2></div><button class="text-button" data-go-page="library">View library <span>→</span></button></div><div id="studio-recent-list" class="jobs-list compact-list"><div class="empty-state"><b>Your projects will appear here</b><p>Create your first video to get started.</p></div></div></section>
+      </section>
+
+      <section class="page-panel" data-page-panel="library">
+        <div class="page-intro"><div><div class="eyebrow">YOUR WORKSPACE</div><h1>Your <em>library.</em></h1><p>All your recordings, explainers, and renders in one place.</p></div><button class="new-project-button" id="library-new-project"><span>＋</span> New project</button></div>
+        <div class="library-toolbar glass-panel"><div><b>Projects</b><small id="library-summary">Your recent activity</small></div><button class="subtle-button" id="refresh-jobs">↻ &nbsp; Refresh</button></div>
+        <div id="jobs-list" class="jobs-list library-list"><div class="empty-state glass-panel"><span>◷</span><b>No projects yet</b><p>Start with a class recording or a topic explainer.</p><button class="primary-button" data-go-page="studio">Create a project <span>→</span></button></div></div>
+      </section>
+
+      <section class="page-panel" data-page-panel="brand">
+        <div class="page-intro"><div><div class="eyebrow">YOUR IDENTITY</div><h1>Brand <em>kit.</em></h1><p>Keep your videos consistent with your institute’s identity.</p></div></div>
+        <div class="brand-layout"><div class="brand-card glass-panel"><div class="brand-card-heading"><span class="eyebrow">BRAND SETTINGS</span><p>Changes apply to new renders.</p></div><div class="brand-form"><label>Brand name<input id="brand-name" value="TechSummit" maxlength="120" placeholder="Your institute name"></label><label>Caption color<input id="brand-color" type="color" value="#b9f66a"></label><div class="brand-assets"><div class="asset-heading"><b>Brand assets</b><small>Optional · add your logo and video bookends</small></div><div class="asset-fields"><label>Logo image<input id="brand-logo-file" type="file" accept="image/png,image/jpeg,image/webp"><small id="brand-logo-name"></small></label><label>Intro image or video<input id="brand-intro-file" type="file" accept="image/*,video/*"><small id="brand-intro-name"></small></label><label>Outro image or video<input id="brand-outro-file" type="file" accept="image/*,video/*"><small id="brand-outro-name"></small></label></div></div><button class="secondary-button" id="save-brand">Save brand kit <span>→</span></button></div></div>
+          <aside class="brand-preview-card glass-panel"><span class="eyebrow">PREVIEW</span><div class="phone-preview"><div class="preview-video"><span class="preview-code">const lesson = <i>“learn by doing”</i>;</span><div class="caption-preview">Learn it <b>step by step.</b></div><span class="preview-brand" id="brand-preview-logo">T</span></div></div><div class="preview-label"><b id="brand-preview-name">TechSummit</b><small id="brand-colors">#B9F66A · CAPTION COLOR</small></div></aside></div>
+      </section>
+      <footer class="footer">Made for educators with a story to share. <span>Reel Studio</span></footer>
+    </div>
+  </main>
+
+  <dialog id="new-project-dialog" class="start-dialog"><button class="dialog-close" id="skip-project" aria-label="Close">×</button><div class="dialog-kicker">REEL STUDIO <span>·</span> NEW PROJECT</div><h2>What are we making?</h2><p class="dialog-subtitle">Choose a starting point. You can refine everything later.</p><div class="start-choices"><button class="start-choice" data-start-mode="recording" type="button"><span class="start-choice-icon recording-icon">◉</span><span><b>Turn a class into clips</b><small>Find the clearest, most engaging moments in a recording.</small></span><span class="choice-arrow">↗</span></button><button class="start-choice" data-start-mode="topic" type="button"><span class="start-choice-icon topic-icon">✳</span><span><b>Create a topic explainer</b><small>Build a short video from an idea, concept, or question.</small></span><span class="choice-arrow">↗</span></button></div><div class="dialog-footer"><span>Choose a workflow to continue</span><button class="later-button" id="later-project">Maybe later</button></div></dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <dialog id="job-dialog" class="job-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form><div id="job-detail"></div></dialog>
+  <script src="/app.js"></script>
+</body>
+</html>

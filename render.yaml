@@ -1,0 +1,35 @@
+﻿services:
+  - type: web
+    name: reel-studio
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: DEMO_MODE
+        value: "false"
+      - key: DATABASE_PATH
+        value: ./data/reelstudio.db
+      - key: UPLOAD_DIR
+        value: ./uploads
+      - key: OUTPUT_DIR
+        value: ./outputs
+      - key: TEMP_DIR
+        value: ./data/tmp
+      - key: WHISPER_MODEL
+        value: tiny
+      - key: WHISPER_DEVICE
+        value: cpu
+      - key: WHISPER_COMPUTE_TYPE
+        value: int8
+      - key: WHISPER_CACHE_DIR
+        value: ./data/whisper-cache
+      - key: ENABLE_GENERATED_AUDIO
+        value: "true"
+      - key: ENABLE_VIDEO_RENDERING
+        value: "true"
+      - key: GEMINI_API_KEY
+        sync: false
