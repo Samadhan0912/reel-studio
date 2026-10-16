@@ -1,6 +1,7 @@
-# Reel Studio backend
+# Reel Studio
 
 Local full-stack app for an AI video studio. It provides persistent uploads, local Faster-Whisper transcription, Gemini-powered highlight selection and topic explainers, editable clip boundaries, brand kits, optional TTS narration, and FFmpeg MP4 rendering. Social publishing remains disabled until platform OAuth credentials are configured.
+
 
 ## Run locally
 
