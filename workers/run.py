@@ -14,6 +14,7 @@ from app.config import settings
 from app.services.pipeline import ProviderNotConfigured, processors
 from app.services.jobs import set_job_status
 from app.services.demo import process_demo_job
+from app.services.processing import process_ai_job
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 log = logging.getLogger("reelstudio.worker")
@@ -42,7 +43,7 @@ def run_once() -> bool:
     job_id = job["id"]
     try:
         result = (process_demo_job(job_id, job["kind"], job["input_json"]) if settings.demo_mode
-                  else processors.run(job["kind"], job["input_json"]))
+                  else process_ai_job(job_id, job["kind"], job["input_json"]))
         set_job_status(job_id, "completed", 100, result=result)
         log.info("job completed id=%s kind=%s", job_id, job["kind"])
     except ProviderNotConfigured as exc:

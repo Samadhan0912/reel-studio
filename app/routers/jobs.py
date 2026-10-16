@@ -1,3 +1,6 @@
+import json
+import importlib.util
+import shutil
 from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from fastapi.responses import FileResponse
@@ -6,10 +9,28 @@ from app.db import connect
 from app.schemas import RecordingJobRequest, ExplainerJobRequest, RenderRequest
 from app.services.jobs import create_job, get_job, list_jobs
 from app.services.jobs import set_job_status
+from app.services.cancellation import cancel_job
 from app.services.demo import process_demo_job
+from app.services.processing import run_ai_job
 from app.utils.files import path_is_within
 
 router = APIRouter(prefix="/api/v1", tags=["studio jobs"])
+
+
+def require_gemini() -> None:
+    if settings.demo_mode:
+        return
+    if not settings.gemini_api_key:
+        raise HTTPException(503, "Gemini is not configured. Add GEMINI_API_KEY to backend/.env and restart the server.")
+
+
+def require_recording_providers() -> None:
+    if settings.demo_mode:
+        return
+    if importlib.util.find_spec("faster_whisper") is None:
+        raise HTTPException(503, "Local transcription is not installed. Run pip install -r requirements.txt in backend and restart.")
+    if not settings.gemini_api_key:
+        raise HTTPException(503, "Gemini is not configured. Add GEMINI_API_KEY to backend/.env and restart the server.")
 
 
 def ensure_brand_exists(brand_id: str | None) -> None:
@@ -32,6 +53,7 @@ def run_demo_job(job_id: str, kind: str, payload: dict):
 
 @router.post("/jobs/recording", status_code=202)
 def create_recording_job(body: RecordingJobRequest, background_tasks: BackgroundTasks):
+    require_recording_providers()
     with connect() as db:
         asset = db.execute("SELECT * FROM assets WHERE id=?", (body.asset_id,)).fetchone()
         if not asset:
@@ -41,15 +63,20 @@ def create_recording_job(body: RecordingJobRequest, background_tasks: Background
     job = create_job("recording_highlights", payload)
     if settings.demo_mode:
         background_tasks.add_task(run_demo_job, job["id"], job["kind"], job["input_json"])
+    else:
+        background_tasks.add_task(run_ai_job, job["id"], job["kind"], job["input_json"])
     return job
 
 
 @router.post("/jobs/explainer", status_code=202)
 def create_explainer_job(body: ExplainerJobRequest, background_tasks: BackgroundTasks):
+    require_gemini()
     ensure_brand_exists(body.brand_id)
     job = create_job("topic_explainer", body.model_dump())
     if settings.demo_mode:
         background_tasks.add_task(run_demo_job, job["id"], job["kind"], job["input_json"])
+    else:
+        background_tasks.add_task(run_ai_job, job["id"], job["kind"], job["input_json"])
     return job
 
 
@@ -66,16 +93,31 @@ def get_one_job(job_id: str):
     return job
 
 
+@router.post("/jobs/{job_id}/cancel")
+def cancel_one_job(job_id: str):
+    job = cancel_job(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job["status"] not in {"cancelled", "queued", "processing"}:
+        raise HTTPException(409, f"A {job['status']} job cannot be cancelled")
+    return job
+
+
 @router.post("/clips/{clip_id}/render", status_code=202)
 def request_clip_render(clip_id: str, body: RenderRequest, background_tasks: BackgroundTasks):
+    if not settings.demo_mode and settings.enable_video_rendering and not (shutil.which("ffmpeg") or importlib.util.find_spec("imageio_ffmpeg")):
+        raise HTTPException(503, "FFmpeg is unavailable. Install requirements.txt or add FFmpeg to PATH.")
     with connect() as db:
-        clip = db.execute("SELECT id,job_id FROM clips WHERE id=?", (clip_id,)).fetchone()
+        clip = db.execute("SELECT id,job_id,metadata_json FROM clips WHERE id=?", (clip_id,)).fetchone()
     if not clip:
         raise HTTPException(404, "Clip not found")
     ensure_brand_exists(body.brand_id)
-    job = create_job("clip_render", {"clip_id": clip_id, **body.model_dump()})
+    metadata = json.loads(clip["metadata_json"])
+    job = create_job("clip_render", {"clip_id": clip_id, "source_path": metadata.get("source_path"), **body.model_dump()})
     if settings.demo_mode:
         background_tasks.add_task(run_demo_job, job["id"], job["kind"], job["input_json"])
+    else:
+        background_tasks.add_task(run_ai_job, job["id"], job["kind"], job["input_json"])
     return job
 
 

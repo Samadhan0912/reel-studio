@@ -26,9 +26,10 @@ def list_jobs(limit: int = 50) -> list[dict[str, Any]]:
 
 
 def set_job_status(job_id: str, status: str, progress: int, result: dict | None = None, error: str | None = None) -> None:
+    encoded_result = json.dumps(result) if result is not None else None
     with connect() as db:
-        db.execute("UPDATE jobs SET status=?,progress=?,result_json=?,error=?,updated_at=? WHERE id=?",
-                   (status, progress, json.dumps(result) if result is not None else None, error, now(), job_id))
+        db.execute("UPDATE jobs SET status=?,progress=?,result_json=COALESCE(?,result_json),error=?,updated_at=? WHERE id=? AND (status!='cancelled' OR ?='cancelled')",
+                   (status, progress, encoded_result, error, now(), job_id, status))
 
 
 def add_clips(job_id: str, clips: list[dict[str, Any]]) -> None:
