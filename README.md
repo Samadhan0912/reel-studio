@@ -1,6 +1,6 @@
-# Reel Studio backend
+# Reel Studio
 
-Local demo backend for an AI video studio. It provides persistent upload records, recording and explainer jobs, editable clip boundaries, brand kits, and render-job requests. Demo mode generates visibly labeled sample results so the API and frontend can be explored without external AI accounts. Demo outputs do not analyze source media or produce a rendered video.
+Local demo for an AI video studio. It provides persistent upload records, recording and explainer jobs, editable clip boundaries, brand kits, and render-job requests. Demo mode generates visibly labeled sample results so the API and frontend can be explored without external AI accounts. Demo outputs do not analyze source media or produce a rendered video.
 
 ## Run locally
 
